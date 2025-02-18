@@ -1,0 +1,11 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: movie-service
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver  # JDBC driver for MySQL
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: secrets # Database username                     # Database password
+    password: myuser # Database password

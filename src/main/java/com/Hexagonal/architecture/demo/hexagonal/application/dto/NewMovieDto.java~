@@ -1,0 +1,4 @@
+package com.Hexagonal.architecture.demo.hexagonal.application.dto;
+
+public record NewMovieDto() {
+}
