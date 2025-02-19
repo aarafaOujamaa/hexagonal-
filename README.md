@@ -164,3 +164,119 @@ Spring Data JPA	Fournit un accès simplifié aux bases de données avec JpaRepos
 ✅ JPA (avec Hibernate) permet d’interagir avec la base sans écrire de SQL.
 
 Cette approche évite les problèmes de synchronisation entre le code et la base de données, notamment en équipe et en production. 🔥
+
+
+
+Dans l'architecture hexagonale, les relations entre les entités (par exemple, des relations entre Movie et Review) doivent être présentes dans le domaine, mais pas nécessairement dans les DTO.
+
+🌟 Règle d’or :
+
+Le domaine reflète la logique métier — il contient les relations réelles entre les entités.
+Les DTO (Data Transfer Objects) servent uniquement à transporter des données entre les couches — ils ne doivent pas imposer de logique métier complexe.
+✅ 1️⃣ Les relations dans le domaine
+Dans le domaine, tu veux refléter les relations réelles entre tes entités car elles définissent la logique métier.
+
+🎬 Exemple : Entités dans le domaine
+java
+Copier
+Modifier
+// Movie.java (domaine)
+public class Movie {
+    private Long id;
+    private String title;
+    private List<Review> reviews;  // Relation directe dans le domaine
+
+    public Movie(Long id, String title, List<Review> reviews) {
+        this.id = id;
+        this.title = title;
+        this.reviews = reviews;
+    }
+
+    // Getters, setters et logique métier
+}
+
+// Review.java (domaine)
+public class Review {
+    private Long id;
+    private String reviewText;
+    private int rating;
+    private Movie movie;  // Relation inverse
+
+    public Review(Long id, String reviewText, int rating, Movie movie) {
+        this.id = id;
+        this.reviewText = reviewText;
+        this.rating = rating;
+        this.movie = movie;
+    }
+
+    // Getters, setters et logique métier
+}
+📌 Pourquoi ?
+
+Le domaine capture la réalité métier (un film a des critiques, une critique appartient à un film).
+Les relations bidirectionnelles peuvent être nécessaires pour certaines règles métier.
+✅ 2️⃣ Les relations dans les DTO
+Les DTO n'ont pas besoin de refléter toutes les relations, sauf si elles sont nécessaires pour le transport des données.
+
+🎯 Exemple : DTO simplifié
+java
+Copier
+Modifier
+// MovieDTO.java
+public record MovieDTO(
+    Long id,
+    String title
+) {}
+
+// ReviewDTO.java
+public record ReviewDTO(
+    Long id,
+    String reviewText,
+    int rating
+) {}
+📌 Pourquoi ?
+
+Les DTO sont des objets plats, qui servent à transférer les données entre les couches, sans logique métier.
+Si les relations profondes ne sont pas nécessaires pour la requête, elles n’ont pas besoin d’être incluses dans le DTO.
+✅ 3️⃣ Quand inclure des relations dans les DTO ?
+Pour les requêtes qui en ont besoin :
+Si ton endpoint REST doit renvoyer un film avec toutes ses critiques, ton DTO doit inclure ces relations.
+
+java
+Copier
+Modifier
+// MovieWithReviewsDTO.java
+public record MovieWithReviewsDTO(
+    Long id,
+    String title,
+    List<ReviewDTO> reviews
+) {}
+Mais seulement au niveau des “ports” (interfaces), jamais dans le domaine.
+
+✅ 4️⃣ Comment mapper domaine ↔️ DTO
+Utilise un mapper (comme MapStruct ou un service de mapping) pour convertir ton domaine en DTO.
+
+java
+Copier
+Modifier
+// MovieMapper.java
+public class MovieMapper {
+    public static MovieDTO toDto(Movie movie) {
+        return new MovieDTO(movie.getId(), movie.getTitle());
+    }
+
+    public static MovieWithReviewsDTO toDtoWithReviews(Movie movie) {
+        List<ReviewDTO> reviews = movie.getReviews().stream()
+            .map(r -> new ReviewDTO(r.getId(), r.getReviewText(), r.getRating()))
+            .toList();
+        return new MovieWithReviewsDTO(movie.getId(), movie.getTitle(), reviews);
+    }
+}
+📌 Pourquoi ?
+
+Le domaine reste propre et sans dépendance extérieure.
+Les DTO ne se polluent pas de logique métier, ils ne sont là que pour le transport de données.
+🚀 Conclusion
+🏠 Domaine : Les relations doivent exister, car elles reflètent la logique métier réelle.
+📦 DTO : Les relations ne sont incluses que si elles sont nécessaires pour le transfert de données — sinon, on les garde simples !
+🔄 Mapping clair entre domaine et DTO — pour que les responsabilités restent bien séparées !
